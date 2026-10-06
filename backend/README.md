@@ -219,6 +219,50 @@ The Hanko backend API publishes public cryptographic keys as a JWK set through t
 [endpoint](https://docs.hanko.io/api-reference/public/well-known/get-json-web-key-set) to enable clients to verify token
 signatures.
 
+### Providing secrets from files
+
+Instead of putting secrets into the configuration file or an environment variable, every setting can be loaded from a
+dedicated file. Append `_FILE` to the environment variable name and set it to the path of the file that contains the
+value:
+
+```bash
+SECRETS_KEYS_FILE=/run/credentials/hanko.service/secrets-keys
+DATABASE_PASSWORD_FILE=/run/credentials/hanko.service/database-password
+THIRD_PARTY_PROVIDERS_GOOGLE_SECRET_FILE=/run/credentials/hanko.service/google-secret
+```
+
+The file content is used verbatim, except that trailing newlines are stripped. List values, such as `secrets.keys`, may
+contain one value per line or comma-separated values:
+
+```
+<CHANGE-ME>
+<CHANGE-ME-TOO>
+```
+
+An explicitly set environment variable always takes precedence over the corresponding `_FILE` variable, and a value
+loaded from a file takes precedence over the configuration file.
+
+This is especially useful with systemd, which can provide the files as
+[credentials](https://systemd.io/CREDENTIALS/) in a private, per-service directory:
+
+```ini
+[Service]
+LoadCredential=secrets-keys:/etc/hanko/secrets-keys
+LoadCredential=database-password:/etc/hanko/database-password
+Environment=SECRETS_KEYS_FILE=%d/secrets-keys
+Environment=DATABASE_PASSWORD_FILE=%d/database-password
+```
+
+The `%d` specifier resolves to the service's credential directory (`$CREDENTIALS_DIRECTORY`), so the secret never appears
+in the unit file or the process environment.
+
+The following `_FILE` variables are supported: `SECRETS_KEYS_FILE`, `DATABASE_PASSWORD_FILE`, `DATABASE_URL_FILE`,
+`EMAIL_DELIVERY_SMTP_PASSWORD_FILE`, `SMTP_PASSWORD_FILE`, `THIRD_PARTY_PROVIDERS_<PROVIDER>_SECRET_FILE`,
+`RATE_LIMITER_REDIS_PASSWORD_FILE` and `FLOW_LOCKER_REDIS_PASSWORD_FILE`.
+
+> **Note** Secrets of custom third party providers (`third_party.custom_providers.*.secret`) cannot be provided through
+> environment variables and must remain in the configuration file.
+
 ### Configure WebAuthn
 
 Passkeys are based on the [Web Authentication API](https://www.w3.org/TR/webauthn-2/#web-authentication-api).

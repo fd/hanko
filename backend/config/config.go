@@ -120,6 +120,11 @@ func Load(cfgFile *string) (*Config, error) {
 		return nil, fmt.Errorf("failed to load config from env vars: %w", err)
 	}
 
+	err = applyFileEnvOverrides(c)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load config from files: %w", err)
+	}
+
 	err = c.PostProcess()
 	if err != nil {
 		return nil, fmt.Errorf("failed to post process config: %w", err)
